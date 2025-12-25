@@ -110,6 +110,12 @@ if errorlevel 1 goto error
 "%OPENSSL_CMD%" x509 -req -days 10950 -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt
 if errorlevel 1 goto error
 echo Client certificate created
+
+REM Generate PFX format for C# SDK
+echo   - Generating client.pfx for C# SDK...
+"%OPENSSL_CMD%" pkcs12 -export -out client.pfx -inkey client.key -in client.crt -certfile ca.crt -passout pass:
+if errorlevel 1 goto error
+echo   - client.pfx created
 echo.
 
 REM ========================================
@@ -136,6 +142,7 @@ mkdir client
 copy /Y ca.crt client\ >nul
 copy /Y client.crt client\ >nul
 copy /Y client.key client\ >nul
+copy /Y client.pfx client\ >nul
 
 echo client/ folder created
 echo.
@@ -171,6 +178,7 @@ echo Files: >> README.txt
 echo   - ca.crt: CA Root Certificate >> README.txt
 echo   - client.crt: Client Certificate (for ALL services) >> README.txt
 echo   - client.key: Client Private Key (KEEP SECRET!) >> README.txt
+echo   - client.pfx: PFX format for C# SDK (contains cert + key, KEEP SECRET!) >> README.txt
 echo. >> README.txt
 echo ## File Description >> README.txt
 echo. >> README.txt
@@ -240,6 +248,7 @@ echo ## Files >> client\README.txt
 echo   - ca.crt: CA Root Certificate >> client\README.txt
 echo   - client.crt: Client Certificate (for ALL services) >> client\README.txt
 echo   - client.key: Client Private Key (KEEP SECRET!) >> client\README.txt
+echo   - client.pfx: PFX format for C# SDK (contains cert + key, no password) >> client\README.txt
 echo. >> client\README.txt
 echo ## Usage >> client\README.txt
 echo Copy this folder to your service directory. >> client\README.txt
@@ -260,7 +269,13 @@ echo       key_file="client/client.key", >> client\README.txt
 echo       server_name="nats-server" >> client\README.txt
 echo   ) >> client\README.txt
 echo. >> client\README.txt
-echo ### C# SDK >> client\README.txt
+echo ### C# SDK (using PFX - Recommended) >> client\README.txt
+echo   Options opts = ConnectionFactory.GetDefaultOptions(); >> client\README.txt
+echo   opts.Url = "tls://your-nats-server:4222"; >> client\README.txt
+echo   opts.SSL = true; >> client\README.txt
+echo   opts.SetCertificateFromPFX("client/client.pfx", ""); >> client\README.txt
+echo. >> client\README.txt
+echo ### C# SDK (using separate files) >> client\README.txt
 echo   Options opts = ConnectionFactory.GetDefaultOptions(); >> client\README.txt
 echo   opts.Url = "tls://your-nats-server:4222"; >> client\README.txt
 echo   opts.SSL = true; >> client\README.txt
@@ -300,6 +315,7 @@ echo [client/] - For ALL client services
 echo   - ca.crt
 echo   - client.crt
 echo   - client.key
+echo   - client.pfx (PFX format for C# SDK)
 echo   - README.txt
 echo.
 echo Next steps:
